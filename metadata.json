@@ -1,0 +1,6 @@
+{
+  "name": "Matemática Divertida 3º Ano",
+  "description": "Jogo educativo infantil com adição, subtração, multiplicação e divisão, fases progressivas, recompensas visuais e álbum de figurinhas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
