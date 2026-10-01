@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DifficultyLevel, LevelInfo, MathQuestion, MascotAccessory, Operation } from '../types';
 import { generateQuestionPool } from '../utils/mathGenerator';
 import { sounds } from '../utils/audio';
 import { MascotTico } from './MascotTico';
 import { MaterialDouradoModal } from './MaterialDourado';
+import { MalhaQuadriculada, MalhaQuadriculadaModal } from './MalhaQuadriculada';
 import { Scratchpad } from './Scratchpad';
 import confetti from 'canvas-confetti';
 import {
@@ -17,6 +18,8 @@ import {
   RotateCcw,
   Flame,
   Volume2,
+  Grid,
+  X,
 } from 'lucide-react';
 
 interface GameScreenProps {
@@ -26,6 +29,7 @@ interface GameScreenProps {
     difficulty: DifficultyLevel;
     questionsCount?: number;
     title: string;
+    specialMode?: 'grid_multiplication';
   };
   accessories: MascotAccessory[];
   onFinishLevel: (stars: number, coins: number, correctCount: number, totalCount: number) => void;
@@ -42,10 +46,13 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const op = level ? level.operation : customMode?.operation || 'addition';
   const diff = level ? level.difficulty : customMode?.difficulty || 1;
   const totalQuestions = level ? level.questionsTotal : customMode?.questionsCount || 10;
+  const specialMode = level?.specialMode || customMode?.specialMode;
+
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
 
   // Pre-generate shuffled, diverse, non-repeating question pool
   const [questionPool, setQuestionPool] = useState<MathQuestion[]>(() =>
-    generateQuestionPool(op, diff, totalQuestions)
+    generateQuestionPool(op, diff, totalQuestions, specialMode)
   );
   const [questionIndex, setQuestionIndex] = useState(0);
 
@@ -64,6 +71,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [showMaterialDourado, setShowMaterialDourado] = useState(false);
   const [showScratchpad, setShowScratchpad] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [showMalhaModal, setShowMalhaModal] = useState(false);
 
   // Victory modal state
   const [isCompleted, setIsCompleted] = useState(false);
@@ -72,7 +80,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   // Mascot dynamic messages
   const [mascotMood, setMascotMood] = useState<'happy' | 'thinking' | 'celebrating' | 'encourage'>('happy');
-  const [mascotMsg, setMascotMsg] = useState('Digite o resultado do cálculo no teclado abaixo!');
+  const [mascotMsg, setMascotMsg] = useState(
+    specialMode === 'grid_multiplication'
+      ? 'Observe a malha quadriculada para descobrir o total pelo princípio multiplicativo!'
+      : 'Digite o resultado do cálculo no teclado abaixo!'
+  );
 
   // Handle typing digits
   const handleInputDigit = (digit: string) => {
@@ -259,6 +271,21 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             <span className="hidden sm:inline">Material Dourado</span>
           </button>
 
+          {/* Malha Quadriculada button (for multiplication or grid mode) */}
+          {(currentQuestion.operation === 'multiplication' || currentQuestion.gridData || specialMode === 'grid_multiplication') && (
+            <button
+              onClick={() => {
+                sounds.playClick();
+                setShowMalhaModal(true);
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 bg-sky-100/90 hover:bg-sky-200 text-sky-900 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              title="Abrir a Malha Quadriculada interativa"
+            >
+              <span>📐</span>
+              <span className="hidden sm:inline">Malha Quadriculada</span>
+            </button>
+          )}
+
           {/* Scratchpad button */}
           <button
             onClick={() => {
@@ -348,6 +375,19 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               ))}
             </div>
           )}
+
+          {/* Interactive Squared Grid (Malha Quadriculada) */}
+          {currentQuestion.gridData && (
+            <div className="pt-2 max-w-xl mx-auto w-full">
+              <MalhaQuadriculada
+                rows={currentQuestion.gridData.rows}
+                cols={currentQuestion.gridData.cols}
+                rowLabel={currentQuestion.gridData.rowLabel}
+                colLabel={currentQuestion.gridData.colLabel}
+                interactive={true}
+              />
+            </div>
+          )}
         </div>
 
         {/* Mode Switcher: Teclado vs Alternativas */}
@@ -387,29 +427,48 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           <div className="max-w-md mx-auto space-y-4">
             {/* Value Display Box */}
             <div
-              className={`p-4 sm:p-5 rounded-3xl border-4 text-center transition-all ${
+              onClick={() => {
+                hiddenInputRef.current?.focus();
+              }}
+              className={`p-4 sm:p-5 rounded-3xl border-4 text-center transition-all cursor-pointer ${
                 isAnswerChecked
                   ? isCorrect
                     ? 'border-emerald-500 bg-emerald-50/50 shadow-md'
                     : 'border-rose-400 bg-rose-50/50 shadow-md'
-                  : 'border-amber-300 bg-amber-50/30 shadow-inner'
+                  : 'border-amber-300 bg-amber-50/30 shadow-inner hover:border-amber-400'
               }`}
             >
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                {isAnswerChecked ? 'Resultado Inserido' : 'Digite o Resultado'}
+                {isAnswerChecked ? 'Resultado Inserido' : 'Resultado do Aluno (Digite no teclado ou clique abaixo)'}
               </span>
               <div className="font-fun text-4xl sm:text-5xl font-extrabold text-slate-900 min-h-[58px] flex items-center justify-center gap-1.5 select-none">
-                {typedAnswer ? (
+                {typedAnswer !== '' ? (
                   <span className="tracking-wider">
                     {parseInt(typedAnswer, 10).toLocaleString('pt-BR')}
                   </span>
                 ) : (
-                  <span className="text-slate-300 text-3xl font-normal">Digite aqui...</span>
+                  <span className="text-slate-300 text-2xl sm:text-3xl font-normal">
+                    Digite a resposta...
+                  </span>
                 )}
                 {!isAnswerChecked && (
                   <span className="w-1 h-9 bg-amber-500 rounded-full animate-pulse inline-block" />
                 )}
               </div>
+              <input
+                ref={hiddenInputRef}
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                aria-label="Insira o resultado"
+                className="opacity-0 absolute -z-10 w-0 h-0"
+                value={typedAnswer}
+                onChange={(e) => {
+                  if (isAnswerChecked) return;
+                  const val = e.target.value.replace(/[^0-9]/g, '');
+                  if (val.length <= 7) setTypedAnswer(val);
+                }}
+              />
             </div>
 
             {/* Virtual Keypad */}
@@ -578,6 +637,16 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
       {showScratchpad && <Scratchpad onClose={() => setShowScratchpad(false)} />}
 
+      {showMalhaModal && (
+        <MalhaQuadriculadaModal
+          initialRows={currentQuestion.gridData?.rows || (currentQuestion.operation === 'multiplication' ? Math.min(8, currentQuestion.num1) : 4)}
+          initialCols={currentQuestion.gridData?.cols || (currentQuestion.operation === 'multiplication' ? Math.min(9, currentQuestion.num2) : 5)}
+          rowLabel={currentQuestion.gridData?.rowLabel}
+          colLabel={currentQuestion.gridData?.colLabel}
+          onClose={() => setShowMalhaModal(false)}
+        />
+      )}
+
       {/* Level Completed Victory Modal */}
       {isCompleted && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-pop">
@@ -641,7 +710,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                 onClick={() => {
                   sounds.playClick();
                   // Reset level with a freshly generated and shuffled question pool
-                  const freshPool = generateQuestionPool(op, diff, totalQuestions);
+                  const freshPool = generateQuestionPool(op, diff, totalQuestions, specialMode);
                   setQuestionPool(freshPool);
                   setIsCompleted(false);
                   setQuestionIndex(0);

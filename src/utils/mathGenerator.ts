@@ -137,7 +137,7 @@ export function generateQuestion(
         symbol: '+',
         options: generateOptions(answer, num1, num2, '+'),
         promptText: `Calcule: ${num1} + ${num2}`,
-        hint: `As unidades somam ${(u1 + u2)}. Deixe a unidade e suba 1 dezena para a ordem seguinte ('vai 1')!`,
+        hint: `As unidades somam ${u1 + u2}. Deixe o ${(u1 + u2) % 10} nas unidades e suba 1 dezena para a ordem seguinte ('vai 1')!`,
         explanation: `${num1} + ${num2} = ${answer}. Unidades: ${u1} + ${u2} = ${u1 + u2}. Reagrupando 1 dezena com as demais dezenas dá ${answer}!`,
       };
     } else if (difficulty === 3) {
@@ -490,16 +490,136 @@ export function generateQuestion(
 }
 
 /**
+ * Generates questions specifically based on the squared grid (malha quadriculada)
+ * and the multiplicative principle (princípio multiplicativo - disposição retangular e combinações).
+ */
+export function generateGridQuestion(index: number): MathQuestion {
+  const id = `grid_q_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
+
+  // 4 pedagogical varieties of grid problems:
+  const types = ['area_grid', 'tiles_wall', 'combinations', 'chocolates_tray'] as const;
+  const type = types[index % types.length];
+
+  if (type === 'area_grid') {
+    const rows = randomInt(2, 5);
+    const cols = randomInt(3, 8);
+    const answer = rows * cols;
+
+    return {
+      id,
+      operation: 'multiplication',
+      num1: rows,
+      num2: cols,
+      answer,
+      symbol: '×',
+      promptText: `Observe a malha quadriculada abaixo. Ela possui ${rows} linhas e ${cols} colunas. Quantos quadradinhos coloridos há no total?`,
+      hint: `Use o princípio multiplicativo: multiplique o número de linhas pelo número de colunas (${rows} × ${cols})!`,
+      explanation: `Em uma malha de ${rows} linhas e ${cols} colunas, calculamos: ${rows} × ${cols} = ${answer} quadradinhos. Cada linha possui ${cols} quadradinhos repetidos ${rows} vezes!`,
+      options: generateOptions(answer, rows, cols, '×'),
+      gridData: {
+        rows,
+        cols,
+        mode: 'count_total',
+      },
+    };
+  } else if (type === 'tiles_wall') {
+    const rows = randomInt(3, 6);
+    const cols = randomInt(3, 7);
+    const answer = rows * cols;
+
+    return {
+      id,
+      operation: 'multiplication',
+      num1: rows,
+      num2: cols,
+      answer,
+      symbol: '×',
+      isWordProblem: true,
+      promptText: `Um pedreiro revestiu uma parede com azulejos dispostos na malha quadriculada. Ele colocou ${rows} fileiras (linhas) com ${cols} azulejos (colunas) cada. Quantos azulejos foram colocados ao todo?`,
+      hint: `Disposição retangular: quantidade de linhas vezes quantidade de colunas (${rows} × ${cols}).`,
+      explanation: `${rows} fileiras de ${cols} azulejos = ${rows} × ${cols} = ${answer} azulejos na parede.`,
+      options: generateOptions(answer, rows, cols, '×'),
+      gridData: {
+        rows,
+        cols,
+        rowLabel: 'Fileiras',
+        colLabel: 'Azulejos',
+        mode: 'count_total',
+      },
+    };
+  } else if (type === 'combinations') {
+    const rows = randomInt(2, 4); // ex: pães
+    const cols = randomInt(3, 5); // ex: recheios
+    const answer = rows * cols;
+
+    return {
+      id,
+      operation: 'multiplication',
+      num1: rows,
+      num2: cols,
+      answer,
+      symbol: '×',
+      isWordProblem: true,
+      promptText: `Princípio Multiplicativo: Uma lanchonete oferece ${rows} tipos de pães (linhas da malha) e ${cols} tipos de recheios (colunas da malha). Quantas opções diferentes de lanches combinando 1 pão e 1 recheio podem ser montadas?`,
+      hint: `Pelo princípio multiplicativo das combinações, multiplique o número de opções de pão pelo número de recheios (${rows} × ${cols})!`,
+      explanation: `${rows} tipos de pão × ${cols} recheios = ${answer} combinações possíveis na malha! Cada quadradinho representa uma combinação diferente.`,
+      options: generateOptions(answer, rows, cols, '×'),
+      gridData: {
+        rows,
+        cols,
+        rowLabel: 'Tipos de Pão',
+        colLabel: 'Recheios',
+        mode: 'combinations',
+      },
+    };
+  } else {
+    // Chocolates tray / caixa de doces
+    const rows = randomInt(3, 5);
+    const cols = randomInt(4, 7);
+    const answer = rows * cols;
+
+    return {
+      id,
+      operation: 'multiplication',
+      num1: rows,
+      num2: cols,
+      answer,
+      symbol: '×',
+      isWordProblem: true,
+      promptText: `Uma caixa de doces finos tem o formato retangular com ${rows} fileiras e ${cols} bombons em cada fileira. Olhando a malha quadriculada, quantos bombons cabem na caixa?`,
+      hint: `Some as fileiras ou faça a multiplicação direta: ${rows} × ${cols}.`,
+      explanation: `${rows} fileiras × ${cols} bombons = ${answer} bombons no total. A malha quadriculada comprova o princípio multiplicativo!`,
+      options: generateOptions(answer, rows, cols, '×'),
+      gridData: {
+        rows,
+        cols,
+        rowLabel: 'Fileiras',
+        colLabel: 'Bombons',
+        mode: 'count_total',
+      },
+    };
+  }
+}
+
+/**
  * Generates an entire pre-shuffled pool of non-repeating questions for a round.
  * Guarantees balanced operations in mixed mode and varied challenge styles.
  */
 export function generateQuestionPool(
   op: Operation,
   difficulty: DifficultyLevel,
-  count: number
+  count: number,
+  specialMode?: 'grid_multiplication'
 ): MathQuestion[] {
   const pool: MathQuestion[] = [];
   const signatures = new Set<string>();
+
+  if (specialMode === 'grid_multiplication') {
+    for (let i = 0; i < count; i++) {
+      pool.push(generateGridQuestion(i));
+    }
+    return shuffleArray(pool);
+  }
 
   if (op === 'mixed') {
     const ops: Operation[] = ['addition', 'subtraction', 'multiplication', 'division'];

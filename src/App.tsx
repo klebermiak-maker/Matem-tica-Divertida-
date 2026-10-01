@@ -29,6 +29,7 @@ export default function App() {
     difficulty: DifficultyLevel;
     questionsCount?: number;
     title: string;
+    specialMode?: 'grid_multiplication';
   } | null>(null);
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => !sounds.getIsMuted());
@@ -107,7 +108,7 @@ export default function App() {
         )
           shouldUnlock = true;
         if (stk.id === 'stk_11' && totalStars >= 30) shouldUnlock = true;
-        if (stk.id === 'stk_12' && updatedLevels.find((l) => l.id === 13)?.completed) shouldUnlock = true;
+        if (stk.id === 'stk_12' && updatedLevels.find((l) => l.worldId === 5)?.completed) shouldUnlock = true;
 
         if (shouldUnlock) {
           sounds.playReward();
@@ -141,7 +142,7 @@ export default function App() {
         } else if (ach.id === 'ach_mult_master') {
           const completedCount = updatedLevels.filter((l) => l.worldId === 3 && l.completed).length;
           progress = completedCount;
-          unlocked = completedCount === 3;
+          unlocked = completedCount >= 4;
         } else if (ach.id === 'ach_div_master') {
           const completedCount = updatedLevels.filter((l) => l.worldId === 4 && l.completed).length;
           progress = completedCount;
@@ -151,7 +152,7 @@ export default function App() {
           progress = Math.min(ach.maxProgress, unlockedStickersCount);
           unlocked = unlockedStickersCount >= 6;
         } else if (ach.id === 'ach_grand_champion') {
-          const bossLvl = updatedLevels.find((l) => l.id === 13);
+          const bossLvl = updatedLevels.find((l) => l.worldId === 5);
           unlocked = Boolean(bossLvl && bossLvl.completed && bossLvl.starsEarned === 3);
           progress = unlocked ? 1 : 0;
         }
@@ -264,6 +265,7 @@ export default function App() {
                     difficulty: config.difficulty,
                     questionsCount: config.questionsCount,
                     title: config.title,
+                    specialMode: config.specialMode,
                   });
                 }}
               />

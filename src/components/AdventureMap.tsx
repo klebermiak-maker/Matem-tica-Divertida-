@@ -223,6 +223,12 @@ export const AdventureMap: React.FC<AdventureMapProps> = ({
                           <h4 className="font-fun font-bold text-base text-slate-900 leading-snug">
                             {level.title}
                           </h4>
+                          {level.specialMode === 'grid_multiplication' && (
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-900 text-[10px] font-bold">
+                              <span>📐</span>
+                              <span>Princípio Multiplicativo</span>
+                            </span>
+                          )}
                           <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                             {level.subtitle}
                           </p>

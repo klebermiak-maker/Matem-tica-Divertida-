@@ -19,6 +19,14 @@ export interface MathQuestion {
     groupsCount?: number;
     icon: string;
   };
+  gridData?: {
+    rows: number;
+    cols: number;
+    interactive?: boolean;
+    rowLabel?: string;
+    colLabel?: string;
+    mode?: 'count_total' | 'find_operation' | 'combinations';
+  };
 }
 
 export interface LevelInfo {
@@ -34,6 +42,7 @@ export interface LevelInfo {
   starsEarned: number; // 0 to 3
   completed: boolean;
   questionsTotal: number;
+  specialMode?: 'grid_multiplication';
 }
 
 export interface Sticker {

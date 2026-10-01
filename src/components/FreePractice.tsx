@@ -9,17 +9,18 @@ interface FreePracticeProps {
     difficulty: DifficultyLevel;
     questionsCount: number;
     title: string;
+    specialMode?: 'grid_multiplication';
   }) => void;
 }
 
 export const FreePractice: React.FC<FreePracticeProps> = ({ onStartPractice }) => {
-  const [selectedOp, setSelectedOp] = useState<Operation>('addition');
+  const [selectedOp, setSelectedOp] = useState<Operation | 'grid'>('addition');
   const [selectedDiff, setSelectedDiff] = useState<DifficultyLevel>(1);
   const [questionsCount, setQuestionsCount] = useState<number>(10);
 
   const operations = [
     {
-      id: 'addition' as Operation,
+      id: 'addition' as const,
       name: 'Adição (+)',
       symbol: '+',
       color: 'border-emerald-300 bg-emerald-50/50 text-emerald-800',
@@ -27,7 +28,7 @@ export const FreePractice: React.FC<FreePracticeProps> = ({ onStartPractice }) =
       desc: 'Juntar, somar e avançar nas dezenas',
     },
     {
-      id: 'subtraction' as Operation,
+      id: 'subtraction' as const,
       name: 'Subtração (-)',
       symbol: '-',
       color: 'border-amber-300 bg-amber-50/50 text-amber-800',
@@ -35,7 +36,7 @@ export const FreePractice: React.FC<FreePracticeProps> = ({ onStartPractice }) =
       desc: 'Tirar, calcular a diferença e dar troco',
     },
     {
-      id: 'multiplication' as Operation,
+      id: 'multiplication' as const,
       name: 'Multiplicação (×)',
       symbol: '×',
       color: 'border-blue-300 bg-blue-50/50 text-blue-800',
@@ -43,7 +44,7 @@ export const FreePractice: React.FC<FreePracticeProps> = ({ onStartPractice }) =
       desc: 'Tabuadas e parcelas repetidas',
     },
     {
-      id: 'division' as Operation,
+      id: 'division' as const,
       name: 'Divisão (÷)',
       symbol: '÷',
       color: 'border-purple-300 bg-purple-50/50 text-purple-800',
@@ -51,7 +52,15 @@ export const FreePractice: React.FC<FreePracticeProps> = ({ onStartPractice }) =
       desc: 'Repartir em partes iguais',
     },
     {
-      id: 'mixed' as Operation,
+      id: 'grid' as const,
+      name: 'Malha Quadriculada (📐)',
+      symbol: '📐',
+      color: 'border-indigo-300 bg-indigo-50/50 text-indigo-900',
+      activeColor: 'bg-indigo-600 text-white border-indigo-700',
+      desc: 'Princípio multiplicativo e disposição retangular',
+    },
+    {
+      id: 'mixed' as const,
       name: 'Misturadão (★)',
       symbol: '★',
       color: 'border-rose-300 bg-rose-50/50 text-rose-800',
@@ -85,6 +94,18 @@ export const FreePractice: React.FC<FreePracticeProps> = ({ onStartPractice }) =
 
   const handleStart = () => {
     sounds.playClick();
+
+    if (selectedOp === 'grid') {
+      onStartPractice({
+        operation: 'multiplication',
+        difficulty: selectedDiff,
+        questionsCount,
+        title: 'Treino da Malha Quadriculada (Princípio Multiplicativo) 📐',
+        specialMode: 'grid_multiplication',
+      });
+      return;
+    }
+
     const opNames: Record<Operation, string> = {
       addition: 'Treino de Adição',
       subtraction: 'Treino de Subtração',
